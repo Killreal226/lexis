@@ -1,0 +1,688 @@
+basePath: /api/v1
+definitions:
+  handler.AuthResponse:
+    properties:
+      access_token:
+        type: string
+      user:
+        $ref: '#/definitions/model.User'
+    type: object
+  handler.ErrorResponse:
+    properties:
+      error:
+        example: invalid request body
+        type: string
+    type: object
+  handler.LoginRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: superSecret123
+        type: string
+    type: object
+  handler.MeResponse:
+    properties:
+      user:
+        $ref: '#/definitions/model.User'
+    type: object
+  handler.RegisterRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: superSecret123
+        type: string
+    type: object
+  handler.WordCheckResponse:
+    properties:
+      contains:
+        items:
+          $ref: '#/definitions/model.Word'
+        type: array
+      exact_match:
+        items:
+          $ref: '#/definitions/model.Word'
+        type: array
+      similar:
+        items:
+          $ref: '#/definitions/repository.WordWithSimilarity'
+        type: array
+    type: object
+  handler.answerRequest:
+    properties:
+      known:
+        example: true
+        type: boolean
+      progress_id:
+        example: 321
+        type: integer
+    type: object
+  handler.answerResponse:
+    properties:
+      graduated:
+        example: false
+        type: boolean
+      new_level:
+        example: 4
+        type: integer
+    type: object
+  handler.batchStartRequest:
+    properties:
+      word_ids:
+        items:
+          type: integer
+        type: array
+    type: object
+  handler.batchStartResponse:
+    properties:
+      created_count:
+        type: integer
+    type: object
+  handler.bucketStatsResponse:
+    properties:
+      bad:
+        type: integer
+      good:
+        type: integer
+      in_progress:
+        type: integer
+      new:
+        type: integer
+      perfect:
+        type: integer
+      total:
+        type: integer
+    type: object
+  handler.nextCandidateResponse:
+    properties:
+      word:
+        $ref: '#/definitions/model.Word'
+    type: object
+  handler.nextResponse:
+    properties:
+      direction:
+        $ref: '#/definitions/model.Direction'
+      level:
+        type: integer
+      progress_id:
+        type: integer
+      word:
+        $ref: '#/definitions/model.Word'
+    type: object
+  handler.rateRequest:
+    properties:
+      rank:
+        enum:
+        - bad
+        - good
+        - perfect
+        example: bad
+        type: string
+      word_id:
+        example: 42
+        type: integer
+    type: object
+  handler.rateResponse:
+    properties:
+      level:
+        type: integer
+    type: object
+  handler.statsResponse:
+    properties:
+      en_ru:
+        $ref: '#/definitions/handler.bucketStatsResponse'
+      ru_en:
+        $ref: '#/definitions/handler.bucketStatsResponse'
+      total:
+        $ref: '#/definitions/handler.bucketStatsResponse'
+    type: object
+  handler.wordCheckRequest:
+    properties:
+      word:
+        example: backyard
+        type: string
+    type: object
+  model.Direction:
+    enum:
+    - en_ru
+    - ru_en
+    type: string
+    x-enum-varnames:
+    - DirectionEnRu
+    - DirectionRuEn
+  model.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      is_superuser:
+        type: boolean
+    type: object
+  model.Word:
+    properties:
+      created_at:
+        type: string
+      created_by:
+        type: integer
+      example_en:
+        type: string
+      example_ru:
+        type: string
+      id:
+        type: integer
+      image_path:
+        type: string
+      translation:
+        type: string
+      word:
+        type: string
+    type: object
+  repository.WordWithSimilarity:
+    properties:
+      created_at:
+        type: string
+      created_by:
+        type: integer
+      example_en:
+        type: string
+      example_ru:
+        type: string
+      id:
+        type: integer
+      image_path:
+        type: string
+      similarity:
+        format: float64
+        type: number
+      translation:
+        type: string
+      word:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API сервиса для изучения английских слов.
+  title: Lexis API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Проверяет учётные данные и возвращает access-токен.
+      parameters:
+      - description: Email и пароль
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.AuthResponse'
+        "400":
+          description: невалидное тело
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: неверный email или пароль
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Вход по email и паролю
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      description: 'JWT stateless: сервер токен не хранит — клиент удаляет access_token.
+        Ответ 204 для единообразия с контрактом API.'
+      responses:
+        "204":
+          description: нет тела
+      summary: Выход
+      tags:
+      - auth
+  /auth/me:
+    get:
+      description: Возвращает данные пользователя по access-токену из заголовка Authorization.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.MeResponse'
+        "401":
+          description: нет/битый/просроченный токен
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: пользователь не найден
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Текущий пользователь
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Создаёт нового пользователя и сразу выдаёт access-токен.
+      parameters:
+      - description: Email и пароль
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.AuthResponse'
+        "400":
+          description: невалидное тело / email / пароль
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "409":
+          description: email уже занят
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Регистрация нового пользователя
+      tags:
+      - auth
+  /health:
+    get:
+      description: Проверяет, что сервер жив и соединение с БД работает.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{\"status\":\"ok\"}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: '{\"status\":\"db unavailable\",\"error\":\"...\"}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - system
+  /learning/answer:
+    post:
+      consumes:
+      - application/json
+      description: Обновляет level и last_reviewed_at по правилам learning/review.
+        graduated=true при переходе с level ниже 10 на 10 или выше.
+      parameters:
+      - description: progress_id и known
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.answerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.answerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: progress не найден
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Ответ по карточке
+      tags:
+      - learning
+  /learning/batch-start:
+    post:
+      consumes:
+      - application/json
+      description: На каждый word_id создаётся по две строки progress (оба направления)
+        с level 0. Уже существующие пары пропускаются (идемпотентность).
+      parameters:
+      - description: Список word_id
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.batchStartRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.batchStartResponse'
+        "400":
+          description: пустой список, слишком много id, невалидные id
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Старт пачки из онбординга
+      tags:
+      - learning
+  /learning/next:
+    get:
+      description: 'mode=learning — level меньше 10; mode=review — уровни 10–20 с
+        выборкой 7:3:1 по «плохо/хорошо/отлично». direction задаёт направление карточки
+        (en_ru или ru_en). Если карточек нет — в ответе только progress_id: null.'
+      parameters:
+      - description: learning или review
+        in: query
+        name: mode
+        required: true
+        type: string
+      - description: en_ru или ru_en
+        in: query
+        name: direction
+        required: true
+        type: string
+      - description: 'Для mode=learning: id progress через запятую; клиент передаёт
+          строки, по которым уже ответили «знаю» в этой сессии по этому направлению'
+        in: query
+        name: exclude
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.nextResponse'
+        "400":
+          description: нет mode или direction, неверные значения
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Следующая карточка для повторения
+      tags:
+      - learning
+  /learning/next-candidate:
+    get:
+      description: 'Слово из словаря, у которого у пользователя ещё нет записей в
+        progress. Query exclude — id через запятую (корзина и скипы текущей сессии
+        на фронте). Если кандидатов нет — в теле word: null.'
+      parameters:
+      - description: 'ID слов через запятую, исключить из выборки, например: 12,45,78'
+        in: query
+        name: exclude
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.nextCandidateResponse'
+        "400":
+          description: невалидный id в exclude
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Следующее новое слово (онбординг)
+      tags:
+      - learning
+  /learning/rate:
+    post:
+      consumes:
+      - application/json
+      description: 'Создаёт две строки progress (en_ru и ru_en) с одним level: bad→10,
+        good→14, perfect→18.'
+      parameters:
+      - description: word_id и rank
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.rateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.rateResponse'
+        "400":
+          description: невалидное тело, неизвестный rank, невалидный word_id
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: слово не найдено
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Оценить рангом в онбординге
+      tags:
+      - learning
+  /learning/stats:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.statsResponse'
+      security:
+      - BearerAuth: []
+      summary: Статистика прогресса по ведёркам
+      tags:
+      - learning
+  /words:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 'Форма multipart: текстовые поля + опциональный файл image (JPEG/PNG/WebP,
+        до 5 МБ).'
+      parameters:
+      - description: Слово
+        in: formData
+        name: word
+        required: true
+        type: string
+      - description: Перевод
+        in: formData
+        name: translation
+        required: true
+        type: string
+      - description: Пример на английском
+        in: formData
+        name: example_en
+        required: true
+        type: string
+      - description: Пример на русском
+        in: formData
+        name: example_ru
+        type: string
+      - description: Картинка
+        in: formData
+        name: image
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Word'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Создать приватное слово
+      tags:
+      - words
+  /words/{id}:
+    get:
+      description: Возвращает карточку, если слово общее или создано текущим пользователем.
+      parameters:
+      - description: ID слова
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Word'
+        "400":
+          description: невалидный id
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: нет доступа или слово не найдено
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Слово по ID
+      tags:
+      - words
+  /words/check:
+    post:
+      consumes:
+      - application/json
+      description: Точные совпадения по написанию (омонимы), похожие (pg_trgm) и вхождение
+        подстроки; секции дедуплицированы по id.
+      parameters:
+      - description: Введённое слово
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.wordCheckRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.WordCheckResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Проверка слова перед созданием
+      tags:
+      - words
+securityDefinitions:
+  BearerAuth:
+    description: 'Введите токен в формате: Bearer <token>'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
