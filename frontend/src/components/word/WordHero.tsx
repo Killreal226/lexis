@@ -27,7 +27,7 @@ export function WordHero({ word, hideTranslation }: Props) {
         </div>
       </div>
 
-      <WordImage path={resolveImagePath(word.image_path)} alt={word.word} />
+      <WordImage path={resolveImagePath(word.image_path)} alt={word.word} imageKey={word.id} />
     </div>
   );
 }
@@ -41,7 +41,15 @@ function ExampleLine({ lang, text }: { lang: "EN" | "RU"; text: string }) {
   );
 }
 
-function WordImage({ path, alt }: { path: string | null; alt: string }) {
+function WordImage({
+  path,
+  alt,
+  imageKey,
+}: {
+  path: string | null;
+  alt: string;
+  imageKey: number;
+}) {
   if (!path) {
     return (
       <div className="aspect-square rounded-3xl border border-dashed border-ink-200 bg-gradient-to-br from-ink-50 to-white grid place-items-center text-ink-400">
@@ -55,6 +63,7 @@ function WordImage({ path, alt }: { path: string | null; alt: string }) {
   return (
     <div className="aspect-square rounded-3xl overflow-hidden border border-ink-200 bg-ink-50 shadow-soft">
       <img
+        key={`${imageKey}-${path}`}
         src={path}
         alt={alt}
         className="h-full w-full object-cover"

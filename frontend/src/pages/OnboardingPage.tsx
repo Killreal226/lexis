@@ -40,6 +40,8 @@ export default function OnboardingPage() {
   const [cart, setCart] = useState<Word[]>([]);
   const [skipped, setSkipped] = useState<Set<number>>(new Set());
   const [actionPending, setActionPending] = useState(false);
+  /** Пока грузим следующее слово — не показываем предыдущую карточку (как в learning/review). */
+  const [fetchingNext, setFetchingNext] = useState(false);
   const navigate = useNavigate();
 
   const excludeIds = useMemo(
@@ -47,29 +49,29 @@ export default function OnboardingPage() {
     [cart, skipped],
   );
 
-  const loadNext = useCallback(
-    async (excludes: number[]) => {
-      setError(null);
-      try {
-        const res = await learning.nextCandidate(excludes);
-        if (!res.word) {
-          setCurrent(null);
-          setPhase("exhausted");
-        } else {
-          setCurrent(res.word);
-          setPhase("ready");
-        }
-      } catch (err) {
+  const loadNext = useCallback(async (excludes: number[]) => {
+    setError(null);
+    setFetchingNext(true);
+    try {
+      const res = await learning.nextCandidate(excludes);
+      if (!res.word) {
+        setCurrent(null);
+        setPhase("exhausted");
+      } else {
+        setCurrent(res.word);
         setPhase("ready");
-        setError(
-          err instanceof ApiError
-            ? err.message
-            : "Не удалось загрузить следующее слово.",
-        );
       }
-    },
-    [],
-  );
+    } catch (err) {
+      setPhase("ready");
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Не удалось загрузить следующее слово.",
+      );
+    } finally {
+      setFetchingNext(false);
+    }
+  }, []);
 
   useEffect(() => {
     void loadNext([]);
@@ -188,6 +190,12 @@ export default function OnboardingPage() {
               onStart={startLearning}
               submitting={phase === "submitting"}
             />
+          ) : fetchingNext ? (
+            <div className="grid min-h-[280px] place-items-center py-16">
+              <div className="flex items-center gap-3 text-ink-500">
+                <Spinner /> <span>Готовим слово…</span>
+              </div>
+            </div>
           ) : (
             <>
               <WordHero word={current} />
@@ -204,7 +212,7 @@ export default function OnboardingPage() {
                         key={rank}
                         onClick={() => handleRate(rank)}
                         className={`${RANK_META[rank].chip}`}
-                        disabled={actionPending}
+                        disabled={actionPending || fetchingNext}
                       >
                         <Check className="h-4 w-4" />
                         {RANK_META[rank].label}
@@ -220,7 +228,7 @@ export default function OnboardingPage() {
                       type="button"
                       onClick={handleAddToCart}
                       className="btn-pastel-sky"
-                      disabled={actionPending}
+                      disabled={actionPending || fetchingNext}
                     >
                       <ShoppingBag className="h-4 w-4" />В корзину «учить»
                     </button>
@@ -228,7 +236,7 @@ export default function OnboardingPage() {
                       type="button"
                       onClick={handleSkip}
                       className="btn-soft"
-                      disabled={actionPending}
+                      disabled={actionPending || fetchingNext}
                     >
                       <SkipForward className="h-4 w-4" />
                       Пропустить
