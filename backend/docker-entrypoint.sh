@@ -1,4 +1,4 @@
-
+#!/bin/sh
 set -eu
 
 : "${DB_HOST:?DB_HOST is required}"
