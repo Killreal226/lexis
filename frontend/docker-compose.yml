@@ -1,0 +1,19 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: lexis-frontend:local
+    container_name: lexis-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    environment:
+      # URL бэкенда, на который nginx будет проксировать /api/* и /images/*.
+      # По умолчанию — бэк, поднятый на хост-машине (Docker Desktop).
+      # На Linux без Docker Desktop замените на адрес реального хоста (например, http://172.17.0.1:8080)
+      # или подключите бэкенд в ту же compose-сеть.
+      BACKEND_URL: ${BACKEND_URL:-http://host.docker.internal:8080}
+    extra_hosts:
+      # Делает host.docker.internal рабочим и на Linux
+      - "host.docker.internal:host-gateway"

@@ -1,0 +1,62 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: lexis-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-lexis}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-lexis}
+      POSTGRES_DB: ${DB_NAME:-lexis}
+    volumes:
+      - lexis-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-lexis} -d ${DB_NAME:-lexis}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    ports:
+      - "${DB_PORT_HOST:-5432}:5432"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: lexis-backend:local
+    container_name: lexis-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-lexis}
+      DB_PASSWORD: ${DB_PASSWORD:-lexis}
+      DB_NAME: ${DB_NAME:-lexis}
+      DB_SSLMODE: disable
+      JWT_SECRET: ${JWT_SECRET:-lexis-jwt-secret}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-168h}
+      STORAGE_PATH: /app/storage/images
+      RUN_SEEDS: ${RUN_SEEDS:-false}
+    volumes:
+      - lexis-images:/app/storage/images
+    expose:
+      - "8080"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: lexis-frontend:local
+    container_name: lexis-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      BACKEND_URL: http://backend:8080
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+
+volumes:
+  lexis-db-data:
+  lexis-images:

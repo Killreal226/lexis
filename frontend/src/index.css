@@ -1,0 +1,203 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-app: #fbfaf7;
+  --bg-elev: #ffffff;
+  --grain-opacity: 0.025;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, sans-serif;
+  background: var(--bg-app);
+  color: theme("colors.ink.900");
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "cv11";
+}
+
+@layer base {
+  body {
+    @apply text-ink-900;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer components {
+  .app-shell-bg {
+    background:
+      radial-gradient(
+        1100px 600px at 90% -10%,
+        rgba(196, 176, 251, 0.22),
+        transparent 60%
+      ),
+      radial-gradient(
+        900px 500px at -10% 10%,
+        rgba(255, 197, 137, 0.16),
+        transparent 60%
+      ),
+      radial-gradient(
+        900px 500px at 50% 110%,
+        rgba(146, 226, 182, 0.14),
+        transparent 60%
+      ),
+      var(--bg-app);
+  }
+
+  .auth-bg {
+    background:
+      radial-gradient(
+        700px 500px at 0% 0%,
+        rgba(196, 176, 251, 0.45),
+        transparent 60%
+      ),
+      radial-gradient(
+        600px 400px at 100% 0%,
+        rgba(255, 197, 137, 0.35),
+        transparent 60%
+      ),
+      radial-gradient(
+        700px 500px at 100% 100%,
+        rgba(146, 226, 182, 0.28),
+        transparent 60%
+      ),
+      radial-gradient(
+        700px 500px at 0% 100%,
+        rgba(255, 160, 178, 0.25),
+        transparent 60%
+      ),
+      var(--bg-app);
+  }
+
+  .surface {
+    @apply bg-white border border-ink-200/70 shadow-soft rounded-xl2;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full
+           px-5 py-2.5 text-sm font-medium
+           transition-all duration-150
+           disabled:opacity-50 disabled:cursor-not-allowed
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-lavender-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white;
+  }
+
+  .btn-primary {
+    @apply btn bg-ink-900 text-white hover:bg-ink-800 active:scale-[0.99];
+  }
+
+  .btn-soft {
+    @apply btn bg-white border border-ink-200 text-ink-800 hover:bg-ink-50 hover:border-ink-300;
+  }
+
+  .btn-ghost {
+    @apply btn text-ink-700 hover:bg-ink-100;
+  }
+
+  .btn-pastel-lavender {
+    @apply btn bg-lavender-100 text-lavender-600 border border-lavender-200/80 hover:bg-lavender-200;
+  }
+  .btn-pastel-mint {
+    @apply btn bg-mint-100 text-emerald-700 border border-mint-200/80 hover:bg-mint-200;
+  }
+  .btn-pastel-peach {
+    @apply btn bg-peach-100 text-orange-700 border border-peach-200/80 hover:bg-peach-200;
+  }
+  .btn-pastel-rose {
+    @apply btn bg-rose2-100 text-rose-700 border border-rose2-200/80 hover:bg-rose2-200;
+  }
+  .btn-pastel-sky {
+    @apply btn bg-sky2-100 text-sky-700 border border-sky2-200/80 hover:bg-sky2-200;
+  }
+
+  .input {
+    @apply w-full rounded-2xl border border-ink-200 bg-white px-4 py-3
+           text-[15px] text-ink-900 placeholder:text-ink-400
+           shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]
+           focus:outline-none focus:ring-2 focus:ring-lavender-300/60 focus:border-lavender-300
+           transition;
+  }
+
+  .label {
+    @apply text-xs font-medium uppercase tracking-wider text-ink-500;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1
+           text-xs font-medium border;
+  }
+
+  .divider {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-ink-200 to-transparent;
+  }
+
+  .glass-card {
+    @apply rounded-3xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-lift;
+  }
+}
+
+/* Flip-card primitives */
+.flip-perspective {
+  perspective: 1400px;
+}
+.flip-inner {
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.flip-flipped {
+  transform: rotateY(180deg);
+}
+.flip-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.flip-back {
+  transform: rotateY(180deg);
+}
+
+/* Drill: flip без absolute — высота = max(лицо, оборот), без пустоты снизу */
+.drill-flip-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.drill-flip-face {
+  position: relative;
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Scrollbar polish */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(20, 20, 35, 0.1);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(20, 20, 35, 0.2);
+  background-clip: padding-box;
+}

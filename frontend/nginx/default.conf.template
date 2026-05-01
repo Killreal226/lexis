@@ -1,0 +1,60 @@
+server {
+    listen       80;
+    server_name  _;
+
+    # Защищаемся от слишком больших аплоадов на /api/v1/words
+    client_max_body_size 8m;
+
+    root   /usr/share/nginx/html;
+    index  index.html;
+
+    # gzip для статики
+    gzip on;
+    gzip_comp_level 6;
+    gzip_min_length 1024;
+    gzip_types
+        text/plain
+        text/css
+        application/javascript
+        application/json
+        image/svg+xml
+        font/woff2;
+
+    # Кешируем хешированные ассеты надолго
+    location /assets/ {
+        access_log off;
+        expires 1y;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        try_files $uri =404;
+    }
+
+    # Прокси на бэкенд: API
+    location /api/ {
+        proxy_pass         ${BACKEND_URL};
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+
+    # Прокси на бэкенд: статика картинок
+    location /images/ {
+        proxy_pass         ${BACKEND_URL};
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_cache_valid  200 1d;
+        expires 7d;
+        add_header Cache-Control "public, max-age=604800";
+    }
+
+    # SPA fallback — все остальные пути отдаём index.html
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-store";
+    }
+}
