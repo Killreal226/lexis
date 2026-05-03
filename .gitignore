@@ -4,6 +4,7 @@
 
 backend/storage/
 backend/server
+backend/data/words.csv
 
 node_modules/
 frontend/dist/

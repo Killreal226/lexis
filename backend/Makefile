@@ -1,6 +1,7 @@
 MIGRATIONS_DIR := ./migrations
 SWAGGER_DIR    := ./docs
 SWAGGER_ENTRY  := cmd/server/main.go
+WORDS_CSV      := ./data/words.csv
 
 ifneq (,$(wildcard ./.env))
     include .env
@@ -9,7 +10,7 @@ endif
 
 DB_DSN := host=$(DB_HOST) port=$(DB_PORT) user=$(DB_USER) password=$(DB_PASSWORD) dbname=$(DB_NAME) sslmode=$(DB_SSLMODE)
 
-.PHONY: migrate-up migrate-down migrate-status migrate-reset migrate-create seed-dev seed-reset swagger run
+.PHONY: migrate-up migrate-down migrate-status migrate-reset migrate-create seed-dev seed-reset import import-force swagger run
 
 migrate-up:
 	goose -dir $(MIGRATIONS_DIR) postgres "$(DB_DSN)" up
@@ -32,6 +33,12 @@ seed-dev:
 
 seed-reset: migrate-reset migrate-up seed-dev
 	@echo "Database reset and seeded."
+
+import:
+	go run ./cmd/import -file $(WORDS_CSV)
+
+import-force:
+	go run ./cmd/import -file $(WORDS_CSV) -force
 
 swagger:
 	swag init -g $(SWAGGER_ENTRY) -o $(SWAGGER_DIR)

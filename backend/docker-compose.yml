@@ -38,9 +38,9 @@ services:
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-168h}
       STORAGE_PATH: /app/storage/images
       RUN_SEEDS: ${RUN_SEEDS:-false}
+      IMPORT_WORDS: ${IMPORT_WORDS:-true}
     volumes:
-      - backend-images:/app/storage/images
+      - ./storage/images:/app/storage/images
 
 volumes:
   db-data:
-  backend-images:

@@ -12,7 +12,8 @@ RUN go mod download
 COPY . .
 
 ENV CGO_ENABLED=0 GOOS=linux
-RUN go build -trimpath -ldflags "-s -w" -o /out/server ./cmd/server
+RUN go build -trimpath -ldflags "-s -w" -o /out/server ./cmd/server && \
+    go build -trimpath -ldflags "-s -w" -o /out/import ./cmd/import
 
 RUN go install github.com/pressly/goose/v3/cmd/goose@latest && \
     cp /go/bin/goose /out/goose
@@ -25,10 +26,12 @@ RUN apk add --no-cache ca-certificates tzdata postgresql16-client && \
 WORKDIR /app
 
 COPY --from=builder /out/server /app/server
+COPY --from=builder /out/import /app/import
 COPY --from=builder /out/goose  /usr/local/bin/goose
 
 COPY migrations ./migrations
 COPY seeds      ./seeds
+COPY data       ./data
 
 RUN mkdir -p /app/storage/images && \
     if [ -d /app/seeds/images ]; then cp -R /app/seeds/images/. /app/storage/images/; fi && \

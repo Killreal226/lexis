@@ -10,6 +10,9 @@ set -eu
 : "${MIGRATIONS_DIR:=/app/migrations}"
 : "${SEEDS_FILE:=/app/seeds/dev.sql}"
 : "${RUN_SEEDS:=false}"
+: "${IMPORT_WORDS:=true}"
+: "${IMPORT_WORDS_FILE:=/app/data/words.csv}"
+: "${IMPORT_BIN:=/app/import}"
 
 DSN="host=${DB_HOST} port=${DB_PORT} user=${DB_USER} password=${DB_PASSWORD} dbname=${DB_NAME} sslmode=${DB_SSLMODE}"
 
@@ -37,6 +40,11 @@ if [ "${RUN_SEEDS}" = "true" ] && [ -f "${SEEDS_FILE}" ]; then
     else
         echo "[backend] psql not installed in runtime image, skipping seeds" >&2
     fi
+fi
+
+if [ "${IMPORT_WORDS}" = "true" ] && [ -x "${IMPORT_BIN}" ] && [ -f "${IMPORT_WORDS_FILE}" ]; then
+    echo "[backend] importing words from ${IMPORT_WORDS_FILE}..."
+    "${IMPORT_BIN}" -file "${IMPORT_WORDS_FILE}"
 fi
 
 echo "[backend] starting: $*"
